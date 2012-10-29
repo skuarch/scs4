@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-configuration PUBLIC
+"-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+"http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<!--
+    Document   : hibernate.cfg.xml
+    Created on : November 1, 2011, 10:48 AM
+    Author     : skuarch
+    Description:
+        Purpose of the document follows.
+-->
+
+<hibernate-configuration>
+    <session-factory>
+
+        <!-- using glassfish pool -->
+        <property name="show_sql">false</property>        
+        <property name="hibernate.connection.datasource">jdbc/ssn_4</property>
+        <property name="hibernate.current_session_context_class">thread</property>   
+        <property name="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</property>
+        <!--<property name="hbm2ddl.auto">create-drop</property>-->
+        <property name="hbm2ddl.auto">validate</property>
+
+        <mapping class="beans.Collector"/>
+
+    </session-factory>
+
+</hibernate-configuration>

@@ -1,11 +1,13 @@
 package net;
 
+import beans.Collector;
+import dao.DAO;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.net.NoRouteToHostException;
 import java.net.Socket;
+import java.util.HashMap;
 import org.apache.log4j.Logger;
 import util.IOUtilities;
 
@@ -26,8 +28,7 @@ public class DispatchClient {
     private InputStream remoteInputStream = null;
     private ObjectInputStream remoObjectInputStream = null;
     private Socket remoteSocket = null;
-    private String remoteServer = null;
-    private int remotePort = 8081;
+    private Collector collector = null;
 
     //==========================================================================
     /**
@@ -39,7 +40,6 @@ public class DispatchClient {
     public DispatchClient(InputStream myInputStream, OutputStream myOutputStream) {
         this.myInputStream = myInputStream;
         this.myOutputStream = myOutputStream;
-        this.remoteServer = "192.168.208.32";
     } // end DispatchClient
 
     //==========================================================================
@@ -47,7 +47,7 @@ public class DispatchClient {
      * in this method the main server receives the object and sends the object
      * to remote server
      */
-    public void transferData() {
+    public synchronized void transferData() {
 
         if (myInputStream == null) {
             throw new NullPointerException("myInputStream is null");
@@ -59,6 +59,7 @@ public class DispatchClient {
 
         Object objectClient = null;
         Object objectRemote = null;
+        HashMap hashMap = null;
 
         try {
 
@@ -70,11 +71,17 @@ public class DispatchClient {
             //if doesn't exist reponse, do somenthing
             if (objectClient == null) {
                 //do something
+                logger.error("objectClient is null");
                 return;
+            } else {
+                hashMap = (HashMap) objectClient;
+                collector = getCollector(hashMap.get("collector").toString());
             }
 
+            //create socket 
+            createRemoteSocket(collector.getIp(), collector.getPort());
+            
             //tranfer object to remote server
-            remoteSocket = new Socket(remoteServer, remotePort);
             transferObjectRemoteServer(objectClient);
 
             //wainting response from remote server
@@ -83,8 +90,6 @@ public class DispatchClient {
             //resend remoteObject to client
             sendObjectClient(objectRemote);
 
-        } catch(NoRouteToHostException nrthe){    
-            sendErrorCLient(new Exception(nrthe.getMessage() + " " + remoteServer + " " + remotePort));
         } catch (Exception e) {
             sendErrorCLient(e);
             logger.error(e);
@@ -96,12 +101,22 @@ public class DispatchClient {
     } // end transferData
 
     //==========================================================================
+    private void createRemoteSocket(String ip, int port) throws Exception {
+
+        try {
+            remoteSocket = new Socket(collector.getIp(), collector.getPort());
+        } catch (Exception e) {
+            throw e;
+        }
+    }
+
+    //==========================================================================
     /**
      * return to client the new object.
      *
      * @param objectRemote Object
      */
-    public void sendObjectClient(Object objectRemote) {
+    public void sendObjectClient(Object objectRemote) throws Exception {
 
         try {
             myObjectOutputStream = new ObjectOutputStream(myOutputStream);
@@ -211,7 +226,7 @@ public class DispatchClient {
     protected void finalize() throws Throwable {
 
         logger.info("cleaning DispatchClient");
-        
+
         try {
             closer();
             myInputStream = null;
@@ -223,6 +238,7 @@ public class DispatchClient {
             remoteInputStream = null;
             remoObjectInputStream = null;
             remoteSocket = null;
+            collector = null;
         } catch (Exception e) {
             logger.error(e);
         } finally {
@@ -230,10 +246,10 @@ public class DispatchClient {
         }
     }
     // end finalize
-    
+
     //==========================================================================
-    private void sendErrorCLient(Object object){
-    
+    private void sendErrorCLient(Object object) {
+
         try {
             myObjectOutputStream = new ObjectOutputStream(myOutputStream);
             myObjectOutputStream.writeObject(object);
@@ -241,7 +257,24 @@ public class DispatchClient {
             logger.error(e);
             e.printStackTrace();
         }
-        
+
     } // end sendErrorCLient
-    
+
+    //==========================================================================
+    private Collector getCollector(String collectorName) {
+
+        Collector collector = null;
+
+        try {
+
+            collector = (Collector) new DAO().find(Collector.class, collectorName, "name").get(0);
+
+        } catch (Exception e) {
+            logger.error(e);
+            e.printStackTrace();
+        }
+
+        return collector;
+
+    } // end getCollectorIP
 } // end class
