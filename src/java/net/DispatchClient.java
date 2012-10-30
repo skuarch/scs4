@@ -80,7 +80,7 @@ public class DispatchClient {
 
             //create socket 
             createRemoteSocket(collector.getIp(), collector.getPort());
-            
+
             //tranfer object to remote server
             transferObjectRemoteServer(objectClient);
 
@@ -122,8 +122,7 @@ public class DispatchClient {
             myObjectOutputStream = new ObjectOutputStream(myOutputStream);
             myObjectOutputStream.writeObject(objectRemote);
         } catch (Exception e) {
-            logger.error(e);
-            e.printStackTrace();
+            throw e;
         }
 
     } // end sendObjectClient
@@ -135,7 +134,7 @@ public class DispatchClient {
      *
      * @return Object
      */
-    private Object receiveObjectFromClient() {
+    private Object receiveObjectFromClient() throws Exception {
 
         Object object = null;
 
@@ -149,9 +148,9 @@ public class DispatchClient {
                     break;
                 }
             }
+            
         } catch (Exception e) {
-            logger.error(e);
-            e.printStackTrace();
+            throw e;
         }
 
         return object;
@@ -166,7 +165,7 @@ public class DispatchClient {
      * @param port int port of remote server.
      * @param object object
      */
-    private void transferObjectRemoteServer(Object object) {
+    private void transferObjectRemoteServer(Object object) throws Exception {
 
         try {
 
@@ -176,14 +175,13 @@ public class DispatchClient {
             remoteObjectOutputStream.flush();
 
         } catch (Exception e) {
-            logger.error(e);
-            e.printStackTrace();
+            throw e;
         }
 
     } // end transferObject
 
     //==========================================================================
-    private Object receiveObjectFromRemoteServer() {
+    private Object receiveObjectFromRemoteServer() throws Exception {
 
         Object object = null;
 
@@ -200,8 +198,7 @@ public class DispatchClient {
             }
 
         } catch (Exception e) {
-            logger.error(e);
-            e.printStackTrace();
+            throw e;
         }
 
         return object;
@@ -209,45 +206,10 @@ public class DispatchClient {
     } // end receiveObjectFromRemoteServer
 
     //==========================================================================
-    private void closer() {
-        IOUtilities.closeOutputStream(remoteObjectOutputStream);
-        IOUtilities.closeOutputStream(remoteOutputStream);
-        IOUtilities.closeInputStream(remoteInputStream);
-        IOUtilities.closeInputStream(remoObjectInputStream);
-        IOUtilities.closeInputStream(myInputStream);
-        IOUtilities.closeInputStream(myObjectInputStream);
-        IOUtilities.closeOutputStream(myOutputStream);
-        IOUtilities.closeOutputStream(myObjectOutputStream);
-        IOUtilities.closeSocket(remoteSocket);
-    } // end closer
-
-    //==========================================================================
-    @Override
-    protected void finalize() throws Throwable {
-
-        logger.info("cleaning DispatchClient");
-
-        try {
-            closer();
-            myInputStream = null;
-            myOutputStream = null;
-            myObjectOutputStream = null;
-            myObjectInputStream = null;
-            remoteOutputStream = null;
-            remoteObjectOutputStream = null;
-            remoteInputStream = null;
-            remoObjectInputStream = null;
-            remoteSocket = null;
-            collector = null;
-        } catch (Exception e) {
-            logger.error(e);
-        } finally {
-            super.finalize();
-        }
-    }
-    // end finalize
-
-    //==========================================================================
+    /**
+     * send error to client
+     * @param object Exception
+     */
     private void sendErrorCLient(Object object) {
 
         try {
@@ -261,7 +223,13 @@ public class DispatchClient {
     } // end sendErrorCLient
 
     //==========================================================================
-    private Collector getCollector(String collectorName) {
+    /**
+     * return a collector
+     * @param collectorName String name of collector
+     * @return Collector
+     * @throws Exception 
+     */
+    private Collector getCollector(String collectorName) throws Exception {
 
         Collector collector = null;
 
@@ -270,11 +238,27 @@ public class DispatchClient {
             collector = (Collector) new DAO().find(Collector.class, collectorName, "name").get(0);
 
         } catch (Exception e) {
-            logger.error(e);
-            e.printStackTrace();
+            throw e;
         }
 
         return collector;
 
     } // end getCollectorIP
+
+    //==========================================================================
+    /**
+     * close all
+     */
+    private void closer() {
+        IOUtilities.closeOutputStream(remoteObjectOutputStream);
+        IOUtilities.closeOutputStream(remoteOutputStream);
+        IOUtilities.closeInputStream(remoteInputStream);
+        IOUtilities.closeInputStream(remoObjectInputStream);
+        IOUtilities.closeInputStream(myInputStream);
+        IOUtilities.closeInputStream(myObjectInputStream);
+        IOUtilities.closeOutputStream(myOutputStream);
+        IOUtilities.closeOutputStream(myObjectOutputStream);
+        IOUtilities.closeSocket(remoteSocket);
+    } // end closer
+
 } // end class
